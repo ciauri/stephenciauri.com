@@ -1,0 +1,38 @@
+{%- extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- Main component for a primary marketing message or call to action -->
+    <div class="jumbotron">
+        <div class="row">
+            <div class="col-lg-4"></div>
+            <div class="col-lg-4 yo">
+                <img class="img-circle" src="{{url_for('static', filename='images/face.png')}}" alt="test image"
+                     style="width: 128px; height:128px;">
+
+                <h2 class="name"> Stephen Ciauri </h2>
+
+                <h2 style="margin-top:0px;">
+                    <small>Human Male</small>
+                </h2>
+            </div>
+            <div class="col-lg-4"></div>
+        </div>
+    </div> <!-- /container -->
+    <div class="jumbotron">
+        <h1>Hello</h1>
+
+        <p>Thank you for stopping by.</p>
+
+        <p>Please forgive the mess.</p>
+
+        <p> I just moved in.</p>
+
+        <p>
+            <a class="btn btn-lg btn-primary" href="#" role="button">Do absolutely nothing &raquo;</a>
+        </p>
+    </div>
+
+</div> <!-- /container -->
+{% endblock %}

@@ -1,0 +1,117 @@
+{%- extends "layout.html" %}
+{% block section %}
+
+<div class="row">
+    <div class="col-xs-4">
+        <div class="dropdown">
+            <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="true">
+                Dates
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                {% for date in dates %}
+                <li><a>{{date}}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <h3>SPH (socks/hour) <span id="date"></span></h3>
+
+        <h2><span id="socks"></span></h2>
+    </div>
+    <canvas class="col-xs-8" id="sockChart" width="400" height="400"></canvas>
+</div>
+
+{% endblock %}
+
+{% block extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script>
+    Chart.defaults.global.scaleBeginAtZero = true
+    var graph = makeGraph();
+    updateCounter();
+    var sockTicker = setInterval(updateCounter, 60000);
+
+    function range(start, end) {
+        var foo = [];
+        for (var i = start; i <= end; i++) {
+            foo.push(i + ":00");
+        }
+        return foo;
+    }
+
+
+    function updateCounter(date) {
+        if (date) {
+            var jsonDate = new Date(date);
+        } else {
+            var jsonDate = new Date();
+            var infoText = "so far today";
+        }
+        var day = jsonDate.getUTCDate();
+        var month = jsonDate.getUTCMonth() + 1;
+        var year = jsonDate.getUTCFullYear();
+        var postData = {day: day, month: month, year: year};
+        if (date) {
+            var infoText = "on " + day + "/" + month + "/" + year;
+        }
+        $.post("_updateCounter",
+                {date: JSON.stringify(postData)},
+                function (data) {
+                    $("#socks").text(data.result);
+                    $("#date").text(infoText);
+                });
+        updateGraph(graph, postData);
+    }
+
+
+    function makeGraph() {
+
+        var context = $("#sockChart").get(0).getContext("2d");
+        var data = {
+            labels: range(0, 23),
+            datasets: [
+                {
+                    label: "Socks Per Hour",
+                    fillColor: "rgba(151,187,205,0.2)",
+                    strokeColor: "rgba(151,187,205,1)",
+                    pointColor: "rgba(151,187,205,1)",
+                    pointStrokeColor: "#fff",
+                    pointHighlightFill: "#fff",
+                    pointHighlightStroke: "rgba(151,187,205,1)",
+                    data: range(0, 23)
+                }
+            ]
+        };
+        return new Chart(context).Line(data);
+    }
+
+    function updateGraph(graph, date) {
+        $.post("_graphData",
+                {date: JSON.stringify(date)},
+                function (e) {
+                    for (var i = 0; i <= 23; i++) {
+                        if (i in e.result) {
+                            graph.datasets[0].points[i].value = e.result[i];
+                        } else {
+                            graph.datasets[0].points[i].value = 0;
+
+                        }
+                    }
+                    graph.update();
+                })
+    }
+
+
+    $(function () {
+        $(".dropdown-menu li a").click(function () {
+            $(this).parents(".dropdown").find('.btn').html($(this).text() + ' <span class="caret"></span>');
+            $(this).parents(".dropdown").find('.btn').val($(this).data('value'));
+            updateCounter($(this).text());
+            clearInterval(sockTicker);
+        });
+    });
+
+</script>
+{% endblock %}

@@ -1,0 +1,9 @@
+{%- extends "layout.html" %}
+
+{% block section %}
+{% for user in users %}
+<li><strong>{{ user.email|safe}}</strong>'s password hash is: <strong>{{user.password|safe}}</strong></li>
+{% else %}
+<li><em> No suckers have logged in yet.</em></li>
+{% endfor %}
+{% endblock %}
