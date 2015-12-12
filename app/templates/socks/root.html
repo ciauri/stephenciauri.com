@@ -3,6 +3,11 @@
 
 <div class="row">
     <div class="col-xs-4">
+        <form>
+            Chose Date:
+            <!-- TODO: Make sure that dates are given in 2 character form (01, not 1) -->
+            <input type="date" name="testDate" min="{{dates|first}}" max="{{dates|last}}">
+        </form>
         <div class="dropdown">
             <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="true">
