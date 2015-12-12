@@ -1,14 +1,9 @@
 from flask import Blueprint, render_template, jsonify, request
-from app import db
+from app import db, app
 from app.mod_socks.models import SockCount, Tweet
 from datetime import date, datetime
 import json
 import tweepy
-
-CONSUMER_KEY = "3MfRIm1nDoj4mxFRUYNsJbPCe"
-CONSUMER_SECRET = "lqUmpH7mAST9kAwUYCkbKCeW5J2kXvmniFlz0Wyix6NkIeeqYQ"
-ACCESS_TOKEN = "260134827-ccPniU4me4pDCXC2B8ot8d7ylfPntZikYIKg0Zyb"
-ACCESS_TOKEN_SECRET = "AGg2VDYFchBeb5Zr8omPSKo13AeJY9U3yu4uIuytcEGLX"
 
 mod_socks = Blueprint('socks', __name__)
 
@@ -86,11 +81,11 @@ def getTweets():
 def getAvailableDates():
     dates = []
     for row in db.session.query(Tweet.timestamp).group_by("strftime('%Y-%m-%d',timestamp)"):
-        dates.append("{}-{}-{}".format(row.timestamp.year, row.timestamp.month, row.timestamp.day))
+        dates.append("{:02d}-{:02d}-{:02d}".format(row.timestamp.year, row.timestamp.month, row.timestamp.day))
     return dates
 
 
 def authenticateTwitterClient():
-    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-    auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+    auth = tweepy.OAuthHandler(app.config['CONSUMER_KEY'], app.config['CONSUMER_SECRET'])
+    auth.set_access_token(app.config['ACCESS_TOKEN'], app.config['ACCESS_TOKEN_SECRET'])
     return tweepy.API(auth, wait_on_rate_limit=True)
