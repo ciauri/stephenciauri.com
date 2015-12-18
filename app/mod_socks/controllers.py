@@ -81,6 +81,7 @@ def getTweets():
 def getAvailableDates():
     dates = []
     for row in db.session.query(Tweet.timestamp).group_by("strftime('%Y-%m-%d',timestamp)"):
+        # Guarantees 2 character date fields
         dates.append("{:02d}-{:02d}-{:02d}".format(row.timestamp.year, row.timestamp.month, row.timestamp.day))
     return dates
 
