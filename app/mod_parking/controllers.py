@@ -27,8 +27,6 @@ def allCounts():
             for count in SpotCount.query.filter(SpotCount.level == level.id).all():
                 jsonData["structures"][index]["levels"][levelIndex]["counts"].append({"count": count.count,
                                                                                       "timestamp": count.timestamp})
-    print(jsonData)
-
     return jsonify(**jsonData)
     #
     # counts = db.session.query(SpotCount).all()
@@ -42,7 +40,6 @@ def updateCounts():
 
     for structure in jsonData["Structures"]:
         structureID = _getStructure(structure)
-        # timestamp = structure["Timestamp"]
         for level in structure["Levels"]:
             levelID = __getLevel(level, structureID)
             count = level["CurrentCount"]

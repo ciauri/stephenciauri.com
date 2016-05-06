@@ -12,6 +12,7 @@ class Base(db.Model):
     date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 
+# TODO: Decode and leverage timestamp given by server
 class SpotCount(Base):
     __tablename__ = 'parking_spots'
 
