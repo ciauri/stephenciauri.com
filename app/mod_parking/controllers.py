@@ -4,34 +4,25 @@ from app import db, app
 from app.mod_parking.models import SpotCount, ParkingStructure, StructureLevel, alchemyencoder
 from datetime import date, datetime
 import json
+import datetime
+from enum import Enum
+
+
+class QueryType(Enum):
+    all = 0
+    latest = 1
 
 mod_parking = Blueprint('parking', __name__)
 
 
 @mod_parking.route('/parking/counts', methods=['GET'])
 def allCounts():
-    jsonData = {}
-    jsonData["structures"] = []
-    for (index, structure) in enumerate(ParkingStructure.query.all()):
-        jsonData["structures"].append({"name": structure.name,
-                                       "lat": structure.latitude,
-                                       "long": structure.longitude,
-                                       "address": structure.address,
-                                       "image": structure.image,
-                                       "levels": []})
-        for (levelIndex, level) in enumerate(
-                StructureLevel.query.filter(StructureLevel.structure == structure.id).all()):
-            jsonData["structures"][index]["levels"].append({"name": level.name,
-                                                            "capacity": level.capacity,
-                                                            "counts": []})
-            for count in SpotCount.query.filter(SpotCount.level == level.id).all():
-                jsonData["structures"][index]["levels"][levelIndex]["counts"].append({"count": count.count,
-                                                                                      "timestamp": count.timestamp})
-    return jsonify(**jsonData)
-    #
-    # counts = db.session.query(SpotCount).all()
-    #
-    # return Response(json.dumps([r.__dict__ for r in counts], default=alchemyencoder),  mimetype='application/json')
+    return __buildJSON(QueryType.all)
+
+
+@mod_parking.route('/parking/counts/latest', methods=['GET'])
+def latestCounts():
+    return __buildJSON(QueryType.latest)
 
 
 def updateCounts():
@@ -47,6 +38,35 @@ def updateCounts():
             db.session.add(c)
 
     db.session.commit()
+
+
+def __buildJSON(type):
+    jsonData = {}
+    jsonData["structures"] = []
+    for (index, structure) in enumerate(ParkingStructure.query.all()):
+        jsonData["structures"].append({"name": structure.name,
+                                       "lat": structure.latitude,
+                                       "long": structure.longitude,
+                                       "address": structure.address,
+                                       "image": structure.image,
+                                       "levels": []})
+        for (levelIndex, level) in enumerate(
+                StructureLevel.query.filter(StructureLevel.structure == structure.id).all()):
+            jsonData["structures"][index]["levels"].append({"name": level.name,
+                                                            "capacity": level.capacity,
+                                                            "counts": []})
+            if type is QueryType.all:
+                counts = SpotCount.query.filter(SpotCount.level == level.id).all()
+            elif type is QueryType.latest:
+                counts = [
+                    SpotCount.query.filter(SpotCount.level == level.id).order_by(SpotCount.timestamp.desc()).first()]
+            else:
+                counts = []
+
+            for count in counts:
+                jsonData["structures"][index]["levels"][levelIndex]["counts"].append({"count": count.count,
+                                                                                      "timestamp": count.timestamp.isoformat()})
+    return jsonify(**jsonData)
 
 
 def _getStructure(structureJSON):

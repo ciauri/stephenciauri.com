@@ -5,6 +5,7 @@ from datetime import date, datetime
 import json
 import tweepy
 
+
 mod_socks = Blueprint('socks', __name__)
 
 
@@ -54,7 +55,7 @@ def graphData():
 # Method is scheduled to run every minute. Initiated in app init.
 def getTweets():
     api = authenticateTwitterClient()
-    result = Tweet.query.order_by('-tweet_id').first()
+    result = Tweet.query.order_by(Tweet.id.desc()).first()
     if result:
         last_id = result.tweet_id
     else:
