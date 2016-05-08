@@ -2,15 +2,18 @@ from flask import Blueprint, render_template, jsonify, request, Response
 from urllib.request import urlopen
 from app import db, app
 from app.mod_parking.models import SpotCount, ParkingStructure, StructureLevel, alchemyencoder
-from datetime import date, datetime
+# from datetime import date, datetime
 import json
-import datetime
+# import datetime
 from enum import Enum
-
+import dateutil.parser
+from sqlalchemy import text
 
 class QueryType(Enum):
     all = 0
     latest = 1
+    since = 2
+
 
 mod_parking = Blueprint('parking', __name__)
 
@@ -23,6 +26,16 @@ def allCounts():
 @mod_parking.route('/parking/counts/latest', methods=['GET'])
 def latestCounts():
     return __buildJSON(QueryType.latest)
+
+
+@mod_parking.route('/parking/counts/since/<string(length=23):dateString>', methods=['GET'])
+def allCountsSince(dateString):
+    try:
+        json = __buildJSON(QueryType.since, dateString)
+    except:
+        json = jsonify(error=True)
+
+    return json
 
 
 def updateCounts():
@@ -40,7 +53,7 @@ def updateCounts():
     db.session.commit()
 
 
-def __buildJSON(type):
+def __buildJSON(type, dateString=None):
     jsonData = {}
     jsonData["structures"] = []
     for (index, structure) in enumerate(ParkingStructure.query.all()):
@@ -55,15 +68,45 @@ def __buildJSON(type):
             jsonData["structures"][index]["levels"].append({"name": level.name,
                                                             "capacity": level.capacity,
                                                             "counts": []})
+
+            # deltaQuery = SpotCount.query.from_statement(
+            #     text(
+            #             'select *\
+            #             from parking_spots p\
+            #             where p.count <>\
+            #                     (select count\
+            #                     from parking_spots p2\
+            #                     where p.level = p2.level and p.timestamp < p2.timestamp\
+            #                     order by p2.timestamp ASC\
+            #                     limit 1)\
+            #             and p.level=:level\
+            #             or p.id = (select min(id) from parking_spots where level = p.level)\
+            #             order by p.timestamp ASC'
+            #     )
+            # ).params(level=level.id)
+
+
             if type is QueryType.all:
+                # counts = deltaQuery.all()
                 counts = SpotCount.query.filter(SpotCount.level == level.id).all()
             elif type is QueryType.latest:
                 counts = [
                     SpotCount.query.filter(SpotCount.level == level.id).order_by(SpotCount.timestamp.desc()).first()]
+            elif type is QueryType.since and dateString is not None:
+                date = dateutil.parser.parse(dateString)
+                print(date)
+                print(dateString)
+                counts = SpotCount.query.filter(SpotCount.level == level.id, SpotCount.timestamp > date).all()
+                print(counts)
             else:
                 counts = []
 
             for count in counts:
+                # if isinstance(count.timestamp, str):
+                #     ts = dateutil.parser.parse(count.timestamp).isoformat()
+                # else:
+                #     ts = count.timestamp.isoformat()
+
                 jsonData["structures"][index]["levels"][levelIndex]["counts"].append({"count": count.count,
                                                                                       "timestamp": count.timestamp.isoformat()})
     return jsonify(**jsonData)

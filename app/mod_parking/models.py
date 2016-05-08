@@ -17,7 +17,7 @@ class SpotCount(Base):
     __tablename__ = 'parking_spots'
 
     count = db.Column(db.Integer, nullable=False)
-    timestamp = db.Column(db.DateTime, nullable=False)
+    timestamp = db.Column(db.DateTime, nullable=False, index=True)
     level = db.Column(db.Integer, db.ForeignKey('parking_level.id'), nullable=False)
 
     def __init__(self, count, level):
