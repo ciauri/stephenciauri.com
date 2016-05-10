@@ -1,16 +1,20 @@
 from flask import Flask, render_template
-from flask_sqlalchemy import SQLAlchemy
+# from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from flask_nav import Nav
 from flask_nav.elements import Navbar, View, Subgroup, Link, Separator, Text
 from apscheduler.schedulers.background import BackgroundScheduler
 
+
 app = Flask(__name__)
 app.config.from_object('config')
 
 # Database Creation
-db = SQLAlchemy(app)
-db.create_all()
+# db = SQLAlchemy(app)
+# db.create_all()
+from app.database import init_db
+
+init_db()
 
 # Bootstrap / Nav Init
 Bootstrap(app)
@@ -31,7 +35,7 @@ from app.mod_parking.controllers import mod_parking as parking
 app.register_blueprint(parking)
 # app.register_blueprint(home)
 
-db.create_all()
+# db.create_all()
 
 from app.mod_socks.controllers import getTweets
 from app.mod_parking.controllers import updateCounts
@@ -46,6 +50,13 @@ def initialize(*args, **kwargs):
     apsched.add_job(func=updateCounts, trigger='cron', minute="*", id="queryChapman", max_instances=1)
 
 
+from app.database import misc_db_session, parking_db_session
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    misc_db_session.remove()
+    parking_db_session.remove()
 
 @app.errorhandler(404)
 def not_found(error):

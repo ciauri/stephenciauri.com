@@ -1,6 +1,13 @@
 from flask import Blueprint, render_template, jsonify, request, Response
-from urllib.request import urlopen
-from app import db, app
+from app.database import parking_db_session as session
+
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
+
+# from app import db, app
+
 from app.mod_parking.models import SpotCount, ParkingStructure, StructureLevel, alchemyencoder
 # from datetime import date, datetime
 import json
@@ -38,6 +45,9 @@ def allCountsSince(dateString):
     return json
 
 
+remoteStructures = None
+remoteLevels = None
+
 def updateCounts():
     data = urlopen("https://webfarm.chapman.edu/parkingservice/parkingservice/counts").read().decode('utf8')
     jsonData = json.loads(data)
@@ -48,9 +58,9 @@ def updateCounts():
             levelID = __getLevel(level, structureID)
             count = level["CurrentCount"]
             c = SpotCount(count=count, level=levelID)
-            db.session.add(c)
+            session.add(c)
 
-    db.session.commit()
+    session.commit()
 
 
 def __buildJSON(type, dateString=None):
@@ -118,17 +128,21 @@ def _getStructure(structureJSON):
     long = structureJSON["Longitude"]
     address = structureJSON["Address"]
     image = structureJSON["XhdpiDetailImage"]
+    print("lat: {}, long: {}".format(lat, long))
 
-    struct = db.session.query(ParkingStructure).filter(ParkingStructure.name == name,
-                                                       ParkingStructure.latitude == lat,
-                                                       ParkingStructure.longitude == long).one_or_none()
+    struct = session.query(ParkingStructure).filter(ParkingStructure.name == name,
+                                                    ParkingStructure.latitude == lat,
+                                                    ParkingStructure.longitude == long).one_or_none()
+
 
     if not struct:
+        print("making new struct")
         s = ParkingStructure(name=name, latitude=lat, longitude=long, address=address, image=image)
-        db.session.add(s)
-        db.session.commit()
+        session.add(s)
+        session.commit()
         return s.id
     else:
+        print("using existing struct")
         return struct.id
 
 
@@ -136,14 +150,14 @@ def __getLevel(levelJSON, structureID):
     name = levelJSON["FriendlyName"]
     capacity = levelJSON["Capacity"]
 
-    level = db.session.query(StructureLevel).filter(StructureLevel.name == name,
-                                                    StructureLevel.capacity == capacity,
-                                                    StructureLevel.structure == structureID).one_or_none()
+    level = session.query(StructureLevel).filter(StructureLevel.name == name,
+                                                 StructureLevel.capacity == capacity,
+                                                 StructureLevel.structure == structureID).one_or_none()
 
     if not level:
         l = StructureLevel(name=name, capacity=capacity, structure=structureID)
-        db.session.add(l)
-        db.session.commit()
+        session.add(l)
+        session.commit()
         return l.id
     else:
         return level.id

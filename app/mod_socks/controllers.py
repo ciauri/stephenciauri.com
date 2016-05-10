@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request
-from app import db, app
+from app import app
+from app.database import misc_db_session as session
+
 from app.mod_socks.models import SockCount, Tweet
 from datetime import date, datetime
 import json
@@ -75,13 +77,13 @@ def getTweets():
             lng = None
 
         t = Tweet(ts, id, lat, lng)
-        db.session.add(t)
-        db.session.commit()
+        session.add(t)
+        session.commit()
 
 
 def getAvailableDates():
     dates = []
-    for row in db.session.query(Tweet.timestamp).group_by("strftime('%Y-%m-%d',timestamp)"):
+    for row in session.query(Tweet.timestamp).group_by(Tweet.timestamp):
         # Guarantees 2 character date fields
         dates.append("{:02d}-{:02d}-{:02d}".format(row.timestamp.year, row.timestamp.month, row.timestamp.day))
     return dates

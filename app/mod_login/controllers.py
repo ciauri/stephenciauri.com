@@ -4,7 +4,8 @@ from flask import Blueprint, request, render_template, \
 # Import password / encryption helper tools
 from werkzeug.security import check_password_hash, generate_password_hash
 # Import the database object from the main app module
-from app import db
+# from app import db
+from app.database import misc_db_session as session
 # Import module forms
 from app.mod_login.forms import LoginForm
 # Import module models (i.e. User)
@@ -40,7 +41,7 @@ def signin():
                 user = User(name="nubsauce", email=form.email.data, password=generate_password_hash(form.password.data))
                 user.status = 0
                 user.role = 0
-                db.session.add(user)
-                db.session.commit()
+                session.add(user)
+                session.commit()
 
     return render_template("login/signin.html", form=form, header="LoLogin")

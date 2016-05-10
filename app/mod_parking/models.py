@@ -1,39 +1,40 @@
 # Import the database object (db) from the main application module
 # We will define this inside /app/__init__.py in the next sections.
-from app import db
+# from app import db
+from sqlalchemy import String, Column, Integer, ForeignKey, TIMESTAMP, func, DECIMAL
+from app.database import PBase
 import datetime, decimal
 
 
 # Define a base model for other database tables to inherit
-class Base(db.Model):
+class BaseParking(PBase):
     __abstract__ = True
 
-    id = db.Column(db.Integer, primary_key=True)
-    date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
+    id = Column(Integer, primary_key=True)
+    date_created = Column(TIMESTAMP, default=func.current_timestamp())
 
 
 # TODO: Decode and leverage timestamp given by server
-class SpotCount(Base):
+class SpotCount(BaseParking):
     __tablename__ = 'parking_spots'
 
-    count = db.Column(db.Integer, nullable=False)
-    timestamp = db.Column(db.DateTime, nullable=False, index=True)
-    level = db.Column(db.Integer, db.ForeignKey('parking_level.id'), nullable=False)
+    count = Column(Integer, nullable=False)
+    timestamp = Column(TIMESTAMP, nullable=False, index=True, default=func.current_timestamp())
+    level = Column(Integer, ForeignKey('parking_level.id'), nullable=False)
 
     def __init__(self, count, level):
         self.count = count
-        self.timestamp = db.func.current_timestamp()
         self.level = level
 
 
-class ParkingStructure(Base):
+class ParkingStructure(BaseParking):
     __tablename__ = 'parking_structure'
 
-    name = db.Column(db.String, nullable=False)
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
-    address = db.Column(db.String, nullable=False)
-    image = db.Column(db.String, nullable=False)
+    name = Column(String(length=128), nullable=False)
+    latitude = Column(DECIMAL(precision='10,6'), nullable=False)
+    longitude = Column(DECIMAL(precision='10,6'), nullable=False)
+    address = Column(String(length=128), nullable=False)
+    image = Column(String(length=128), nullable=False)
 
     def __init__(self, name, latitude, longitude, address, image):
         self.name = name
@@ -43,12 +44,12 @@ class ParkingStructure(Base):
         self.image = image
 
 
-class StructureLevel(Base):
+class StructureLevel(BaseParking):
     __tablename__ = 'parking_level'
 
-    name = db.Column(db.String, nullable=False)
-    capacity = db.Column(db.Integer, nullable=False)
-    structure = db.Column(db.Integer, db.ForeignKey('parking_structure.id'), nullable=False)
+    name = Column(String(length=128), nullable=False)
+    capacity = Column(Integer, nullable=False)
+    structure = Column(Integer, ForeignKey('parking_structure.id'), nullable=False)
 
     def __init__(self, name, capacity, structure):
         self.name = name
